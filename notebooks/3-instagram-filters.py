@@ -10,7 +10,11 @@ __author__ = 'Raymond Abargos'
 import cv2
 import numpy as np
 import random
+import pyaudio
+import wave
+from threading import Thread
 
+p = pyaudio.PyAudio()
 
 def apply_invert(frame):
 	return cv2.bitwise_not(frame)
@@ -107,31 +111,72 @@ def apply_portrait_mode(frame):
     
     return frame
 
-cap = cv2.VideoCapture(0)
+def stream_music():
+    CHUNK = 1024
+    
+    file = 'C:\\Users\\raymond.d.abargos\\Downloads\\instagram_beats.wav'
+    wf = wave.open(file, 'rb')
+    
+    stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
+                    channels=wf.getnchannels(),
+                    rate=wf.getframerate(),
+                    output=True)
+    
+    data = wf.readframes(CHUNK)
+    
+    while True:
+        stream.write(data)
+        data = wf.readframes(CHUNK)
+        
+        k = cv2.waitKey(1)
+        
+        if k == ord('q') or k == 27:
+            stream.stop_stream()
+            stream.close()
+            
+            p.terminate()
+            break
 
-while True:
-    _, frame = cap.read()
+
+def stream_video():
+    cap = cv2.VideoCapture(0)
     
-    invert = apply_invert(frame)
-    sepia = apply_sepia(frame)
-    red = apply_red(frame)
-    blue = apply_blue(frame)
-    green = apply_green(frame)
-    disco = apply_disco(frame)
-    portrait = apply_portrait_mode(frame)
-    
-#    cv2.imshow('Frame', frame)
-#    cv2.imshow('Inverted Frame', invert)
-#    cv2.imshow('Sepia Frame', sepia)
-#    cv2.imshow('Red Frame', red)
-#    cv2.imshow('Blue Frame', blue)
-#    cv2.imshow('Green Frame', green)
-#    cv2.imshow('Disco Frame', disco)
-    cv2.imshow('Portrait', portrait)
-    
-    k = cv2.waitKey(1)
-    
-    if k == ord('q') or k == 27:
-        cap.release()
-        cv2.destroyAllWindows()
-        break
+    while True:
+        _, frame = cap.read()
+        
+#        invert = apply_invert(frame)
+#        sepia = apply_sepia(frame)
+#        red = apply_red(frame)
+#        blue = apply_blue(frame)
+#        green = apply_green(frame)
+        disco = apply_disco(frame)
+#        portrait = apply_portrait_mode(frame)
+        
+        
+#        cv2.imshow('Frame', frame)
+#        cv2.imshow('Inverted Frame', invert)
+#        cv2.imshow('Sepia Frame', sepia)
+#        cv2.imshow('Red Frame', red)
+#        cv2.imshow('Blue Frame', blue)
+#        cv2.imshow('Green Frame', green)
+        cv2.imshow('Disco Frame', disco)
+#        cv2.imshow('Portrait', portrait)
+        
+        k = cv2.waitKey(1)
+        
+        if k == ord('q') or k == 27:
+            cap.release()
+            cv2.destroyAllWindows()
+            break
+
+def test_thread():
+    thread1 = Thread(target = stream_video)
+    thread1.start()
+    thread2 = Thread(target = stream_music)
+    thread2.start()
+    thread1.join()
+    thread2.join()
+    print("Thread finished. Exiting...")
+
+test_thread()
+
